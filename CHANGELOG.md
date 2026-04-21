@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-04-21
+
+### Fixed
+- Fixed inquirer compatibility issue with Node.js v24+
+- Changed inquirer import to use `.default` for ES module compatibility
+
 ## [1.0.0] - 2026-04-21
 
 ### Added

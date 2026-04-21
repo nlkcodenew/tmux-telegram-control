@@ -6,7 +6,7 @@ const { init, start, installService } = require('../src/cli');
 program
   .name('tmux-telegram')
   .description('Control tmux sessions remotely via Telegram')
-  .version('1.0.0');
+  .version('1.0.1');
 
 program
   .command('init')
