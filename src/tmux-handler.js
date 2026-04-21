@@ -40,7 +40,8 @@ function sendControlKey(sessionName, key) {
 }
 
 function createSession(sessionName) {
-  const result = tmux('new-session', '-d', '-s', sessionName);
+  // Explicitly start bash to keep session alive (fixes WSL issue)
+  const result = tmux('new-session', '-d', '-s', sessionName, 'bash');
   return result.success;
 }
 
