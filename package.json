@@ -1,6 +1,6 @@
 {
   "name": "tmux-telegram-control",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Control your tmux sessions remotely via Telegram bot - view output, send commands, create sessions, all from your phone",
   "main": "src/index.js",
   "bin": {
