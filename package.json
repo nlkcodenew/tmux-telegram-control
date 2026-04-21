@@ -1,0 +1,45 @@
+{
+  "name": "tmux-telegram-control",
+  "version": "1.0.0",
+  "description": "Control your tmux sessions remotely via Telegram bot - view output, send commands, create sessions, all from your phone",
+  "main": "src/index.js",
+  "bin": {
+    "tmux-telegram": "bin/tmux-telegram.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tmux",
+    "telegram",
+    "remote-control",
+    "terminal",
+    "bot",
+    "devops",
+    "ssh",
+    "cli",
+    "remote",
+    "monitoring",
+    "automation"
+  ],
+  "author": "nlkcodenew",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "commander": "^11.0.0",
+    "inquirer": "^9.2.0",
+    "chalk": "^4.1.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nlkcodenew/tmux-telegram-control.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nlkcodenew/tmux-telegram-control/issues"
+  },
+  "homepage": "https://github.com/nlkcodenew/tmux-telegram-control#readme"
+}
