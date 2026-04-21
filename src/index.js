@@ -355,31 +355,62 @@ async function attachCommand(chatId, userId, args) {
  * Kill session command
  */
 async function killSessionCommand(chatId, userId, args) {
-  if (!args) {
-    await telegram.sendMessage(chatId, 'Usage: /kill `<session_name>`\n\nVí dụ: /kill mywork');
+  const sessions = listSessions();
+
+  // If no sessions exist
+  if (sessions.length === 0) {
+    await telegram.sendMessage(chatId, 'Không có tmux session nào đang chạy.');
     return;
   }
 
-  const sessionName = args.trim();
+  // If args provided, kill directly
+  if (args) {
+    const sessionName = args.trim();
 
-  if (!sessionExists(sessionName)) {
-    await telegram.sendMessage(chatId, `❌ Session \`${sessionName}\` không tồn tại.\n\nDùng /ls để xem danh sách.`);
+    if (!sessionExists(sessionName)) {
+      await telegram.sendMessage(chatId, `❌ Session \`${sessionName}\` không tồn tại.\n\nDùng /ls để xem danh sách.`);
+      return;
+    }
+
+    // Check if user is currently attached to this session
+    if (currentSessions[userId] === sessionName) {
+      delete currentSessions[userId];
+    }
+
+    // Kill the session
+    const { killSession } = require('./tmux-handler');
+    if (killSession(sessionName)) {
+      await telegram.sendMessage(chatId, `✅ *Session \`${sessionName}\` đã bị xóa!*`);
+      console.log(chalk.yellow('🗑️'), `User ${userId} killed session:`, sessionName);
+    } else {
+      await telegram.sendMessage(chatId, `❌ Không thể xóa session \`${sessionName}\``);
+    }
     return;
   }
 
-  // Check if user is currently attached to this session
-  if (currentSessions[userId] === sessionName) {
-    delete currentSessions[userId];
+  // No args - show menu
+  const keyboard = { inline_keyboard: [] };
+  let row = [];
+
+  for (const s of sessions) {
+    row.push({
+      text: `🗑️ ${s}`,
+      callback_data: `kill_${s}`
+    });
+
+    if (row.length === 2) {
+      keyboard.inline_keyboard.push(row);
+      row = [];
+    }
   }
 
-  // Kill the session
-  const { killSession } = require('./tmux-handler');
-  if (killSession(sessionName)) {
-    await telegram.sendMessage(chatId, `✅ *Session \`${sessionName}\` đã bị xóa!*`);
-    console.log(chalk.yellow('🗑️'), `User ${userId} killed session:`, sessionName);
-  } else {
-    await telegram.sendMessage(chatId, `❌ Không thể xóa session \`${sessionName}\``);
+  if (row.length > 0) {
+    keyboard.inline_keyboard.push(row);
   }
+
+  await telegram.sendMessage(chatId, '🗑️ *Chọn session để xóa:*', {
+    reply_markup: keyboard
+  });
 }
 
 /**
@@ -617,6 +648,28 @@ async function handleCallback(callbackQuery) {
     await telegram.answerCallbackQuery(callbackId, `✅ Attached to ${sessionName}`);
 
     console.log(chalk.green('✅'), `User ${userId} attached to:`, sessionName);
+  } else if (callbackData.startsWith('kill_')) {
+    const sessionName = callbackData.replace('kill_', '');
+
+    if (!sessionExists(sessionName)) {
+      await telegram.answerCallbackQuery(callbackId, `❌ Session ${sessionName} không tồn tại`);
+      return;
+    }
+
+    // Check if user is currently attached to this session
+    if (currentSessions[userId] === sessionName) {
+      delete currentSessions[userId];
+    }
+
+    // Kill the session
+    const { killSession } = require('./tmux-handler');
+    if (killSession(sessionName)) {
+      await telegram.sendMessage(chatId, `✅ *Session \`${sessionName}\` đã bị xóa!*`);
+      await telegram.answerCallbackQuery(callbackId, `✅ Đã xóa ${sessionName}`);
+      console.log(chalk.yellow('🗑️'), `User ${userId} killed session:`, sessionName);
+    } else {
+      await telegram.answerCallbackQuery(callbackId, `❌ Không thể xóa ${sessionName}`);
+    }
   } else if (callbackData === 'new_session') {
     await telegram.answerCallbackQuery(callbackId, 'Nhập tên session mới');
     await telegram.sendMessage(chatId, '➕ *Tạo tmux session mới*\n\nGửi tên session (ví dụ: `mywork`, `dev`, `test`):');
