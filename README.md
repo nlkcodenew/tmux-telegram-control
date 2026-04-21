@@ -48,9 +48,22 @@ Ever wanted to check your long-running build, restart a crashed service, or moni
 ## 📦 Installation
 
 ### Prerequisites
+- **Linux or macOS** (Windows users: use WSL)
 - Node.js 14+ 
 - tmux installed (`sudo apt install tmux` or `brew install tmux`)
 - A Telegram bot token (get from [@BotFather](https://t.me/botfather))
+
+### Windows Users
+This package requires `tmux` which is not available on Windows. Use WSL (Windows Subsystem for Linux):
+```bash
+# Install WSL (PowerShell as Admin)
+wsl --install
+
+# Open WSL terminal, then:
+sudo apt update
+sudo apt install tmux nodejs npm
+npm install -g tmux-telegram-control
+```
 
 ### Quick Start
 

@@ -39,9 +39,22 @@ Bạn có bao giờ muốn kiểm tra build đang chạy, restart service bị c
 ## 📦 Cài Đặt
 
 ### Yêu cầu
+- **Linux hoặc macOS** (Windows: dùng WSL)
 - Node.js 14+
 - tmux đã cài (`sudo apt install tmux` hoặc `brew install tmux`)
 - Telegram bot token (lấy từ [@BotFather](https://t.me/botfather))
+
+### Người dùng Windows
+Package này cần `tmux` không có trên Windows. Dùng WSL (Windows Subsystem for Linux):
+```bash
+# Cài WSL (PowerShell as Admin)
+wsl --install
+
+# Mở WSL terminal, sau đó:
+sudo apt update
+sudo apt install tmux nodejs npm
+npm install -g tmux-telegram-control
+```
 
 ### Cài đặt nhanh
 
