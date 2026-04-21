@@ -66,9 +66,10 @@ async function init() {
 
   console.log(chalk.green('\n✅ Configuration saved to:'), CONFIG_FILE);
   console.log(chalk.yellow('\n📝 Next steps:'));
-  console.log('  1. Start the bot:', chalk.cyan('tmux-telegram start'));
-  console.log('  2. Or install as service:', chalk.cyan('tmux-telegram install-service'));
-  console.log('  3. Open Telegram and send /start to your bot\n');
+  console.log('  1. Start the bot:', chalk.cyan('tmux-telegram start -d'), chalk.gray('(background)'));
+  console.log('  2. Or run foreground:', chalk.cyan('tmux-telegram start'));
+  console.log('  3. Or install as service:', chalk.cyan('tmux-telegram install-service'));
+  console.log('  4. Open Telegram and send /start to your bot\n');
 }
 
 function start(options) {
@@ -81,12 +82,36 @@ function start(options) {
   console.log(chalk.blue('🚀 Starting tmux-telegram bot...\n'));
 
   if (options.daemon) {
+    const logFile = path.join(CONFIG_DIR, 'bot.log');
+    const pidFile = path.join(CONFIG_DIR, 'bot.pid');
+
+    // Check if already running
+    if (fs.existsSync(pidFile)) {
+      const oldPid = fs.readFileSync(pidFile, 'utf8').trim();
+      try {
+        process.kill(oldPid, 0); // Check if process exists
+        console.log(chalk.yellow('⚠️  Bot is already running (PID:', oldPid + ')'));
+        console.log(chalk.gray('   Stop it first: kill', oldPid));
+        process.exit(1);
+      } catch (e) {
+        // Process doesn't exist, remove stale PID file
+        fs.unlinkSync(pidFile);
+      }
+    }
+
+    const logStream = fs.openSync(logFile, 'a');
     const child = spawn(process.argv[0], [path.join(__dirname, 'index.js')], {
       detached: true,
-      stdio: 'ignore'
+      stdio: ['ignore', logStream, logStream]
     });
+
     child.unref();
-    console.log(chalk.green('✅ Bot started in background (PID:', child.pid + ')'));
+    fs.writeFileSync(pidFile, child.pid.toString());
+
+    console.log(chalk.green('✅ Bot started in background'));
+    console.log(chalk.gray('   PID:'), child.pid);
+    console.log(chalk.gray('   Log:'), logFile);
+    console.log(chalk.gray('   Stop: kill'), child.pid, chalk.gray('or'), chalk.cyan('tmux-telegram stop'));
   } else {
     require('./index.js');
   }
@@ -140,4 +165,25 @@ WantedBy=multi-user.target
   }
 }
 
-module.exports = { init, start, installService };
+function stop() {
+  const pidFile = path.join(CONFIG_DIR, 'bot.pid');
+
+  if (!fs.existsSync(pidFile)) {
+    console.log(chalk.yellow('⚠️  Bot is not running (no PID file found)'));
+    return;
+  }
+
+  const pid = fs.readFileSync(pidFile, 'utf8').trim();
+
+  try {
+    process.kill(pid, 0); // Check if process exists
+    process.kill(pid, 'SIGTERM');
+    fs.unlinkSync(pidFile);
+    console.log(chalk.green('✅ Bot stopped (PID:', pid + ')'));
+  } catch (e) {
+    console.log(chalk.yellow('⚠️  Process not found (PID:', pid + ')'));
+    fs.unlinkSync(pidFile);
+  }
+}
+
+module.exports = { init, start, stop, installService };

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2026-04-21
+
+### Added
+- Added `tmux-telegram stop` command to stop background bot
+- Improved daemon mode with PID file management and log file
+- Added check for already running bot instance
+- Better daemon mode output with PID and log file location
+
+### Changed
+- Updated init instructions to recommend `start -d` for background mode
+
 ## [1.0.1] - 2026-04-21
 
 ### Fixed
