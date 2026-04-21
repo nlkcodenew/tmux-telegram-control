@@ -46,6 +46,10 @@ class TelegramAPI {
       return response.data;
     } catch (err) {
       console.error('Failed to send message:', err.message);
+      if (err.response) {
+        console.error('Response status:', err.response.status);
+        console.error('Response data:', JSON.stringify(err.response.data));
+      }
       return { ok: false };
     }
   }
