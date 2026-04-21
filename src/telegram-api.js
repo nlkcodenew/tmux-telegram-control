@@ -83,6 +83,13 @@ class TelegramAPI {
   }
 
   /**
+   * Edit message text (alias for editMessage)
+   */
+  async editMessageText(chatId, messageId, text, options = {}) {
+    return this.editMessage(chatId, messageId, text, options);
+  }
+
+  /**
    * Answer callback query
    */
   async answerCallbackQuery(callbackQueryId, text = '') {

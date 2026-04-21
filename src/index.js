@@ -18,6 +18,9 @@ const currentSessions = {}; // {userId: sessionName}
 const watchingSessions = {}; // {userId: {session, messageId, chatId, stop}}
 const pendingNewSession = {}; // {userId: true/false}
 
+// Error notification settings
+let enableErrorNotifications = false; // Default: OFF
+
 let config;
 let telegram;
 
@@ -65,6 +68,7 @@ async function setBotCommands() {
     { command: 'c', description: 'Send Ctrl+C' },
     { command: 'd', description: 'Send Ctrl+D' },
     { command: 'session', description: 'Show current session' },
+    { command: 'error_notify', description: 'Toggle error notifications' },
     { command: 'help', description: 'Show help' }
   ];
 
@@ -219,6 +223,10 @@ async function handleCommand(command, args, chatId, userId) {
       await currentSessionCommand(chatId, userId);
       break;
 
+    case 'error_notify':
+      await errorNotifyCommand(chatId, userId);
+      break;
+
     default:
       await telegram.sendMessage(chatId, '❌ Unknown command. Use /help');
   }
@@ -244,6 +252,9 @@ async function sendHelp(chatId) {
 /e — Press Enter
 /c — Ctrl+C (stop)
 /d — Ctrl+D (exit)
+
+*Settings:*
+/error_notify — Toggle error notifications
 
 *Aliases:*
 /sessions = /ls
@@ -491,6 +502,7 @@ async function unwatchCommand(chatId, userId) {
  */
 async function startWatchLoop(userId) {
   let lastOutput = '';
+  let lastErrors = [];
 
   while (watchingSessions[userId] && !watchingSessions[userId].stop) {
     const { session, messageId, chatId } = watchingSessions[userId];
@@ -510,6 +522,20 @@ async function startWatchLoop(userId) {
     }
 
     lastOutput = output;
+
+    // Detect errors
+    const errors = detectErrors(output);
+    const newErrors = errors.filter(e => !lastErrors.includes(e));
+
+    // Send notification for new errors (only if enabled)
+    if (newErrors.length > 0 && enableErrorNotifications) {
+      let errorMsg = `🚨 *Error detected in ${session}:*\n\n`;
+      for (const err of newErrors.slice(0, 3)) {
+        errorMsg += `❌ \`${err.substring(0, 200)}\`\n`;
+      }
+      await telegram.sendMessage(chatId, errorMsg);
+      lastErrors = errors;
+    }
 
     const highlighted = highlightErrors(output);
     const truncated = highlighted.length > 3800 ? '...\n' + highlighted.slice(-3800) : highlighted;
@@ -614,6 +640,31 @@ async function currentSessionCommand(chatId, userId) {
 }
 
 /**
+ * Error notifications command
+ */
+async function errorNotifyCommand(chatId, userId) {
+  // Show current status with buttons
+  const currentStatus = enableErrorNotifications ? '🔔 BẬT' : '🔕 TẮT';
+
+  // Create inline keyboard with ON/OFF buttons
+  const keyboard = {
+    inline_keyboard: [[
+      {
+        text: enableErrorNotifications ? '✅ BẬT' : '⚪ BẬT',
+        callback_data: 'error_notify_on'
+      },
+      {
+        text: !enableErrorNotifications ? '✅ TẮT' : '⚪ TẮT',
+        callback_data: 'error_notify_off'
+      }
+    ]]
+  };
+
+  const msg = `⚙️ *Error Notifications*\n\nTrạng thái hiện tại: ${currentStatus}\n\nChọn chế độ:`;
+  await telegram.sendMessage(chatId, msg, { reply_markup: keyboard });
+}
+
+/**
  * Handle callback query
  */
 async function handleCallback(callbackQuery) {
@@ -674,6 +725,34 @@ async function handleCallback(callbackQuery) {
     await telegram.answerCallbackQuery(callbackId, 'Nhập tên session mới');
     await telegram.sendMessage(chatId, '➕ *Tạo tmux session mới*\n\nGửi tên session (ví dụ: `mywork`, `dev`, `test`):');
     pendingNewSession[userId] = true;
+  } else if (callbackData === 'error_notify_on') {
+    enableErrorNotifications = true;
+
+    // Update message with new status
+    const keyboard = {
+      inline_keyboard: [[
+        { text: '✅ BẬT', callback_data: 'error_notify_on' },
+        { text: '⚪ TẮT', callback_data: 'error_notify_off' }
+      ]]
+    };
+    const msg = `⚙️ *Error Notifications*\n\nTrạng thái hiện tại: 🔔 BẬT\n\nChọn chế độ:`;
+    await telegram.editMessageText(chatId, message.message_id, msg, { reply_markup: keyboard });
+    await telegram.answerCallbackQuery(callbackId, '🔔 Đã BẬT thông báo lỗi');
+    console.log(chalk.green('✅'), `User ${userId} enabled error notifications`);
+  } else if (callbackData === 'error_notify_off') {
+    enableErrorNotifications = false;
+
+    // Update message with new status
+    const keyboard = {
+      inline_keyboard: [[
+        { text: '⚪ BẬT', callback_data: 'error_notify_on' },
+        { text: '✅ TẮT', callback_data: 'error_notify_off' }
+      ]]
+    };
+    const msg = `⚙️ *Error Notifications*\n\nTrạng thái hiện tại: 🔕 TẮT\n\nChọn chế độ:`;
+    await telegram.editMessageText(chatId, message.message_id, msg, { reply_markup: keyboard });
+    await telegram.answerCallbackQuery(callbackId, '🔕 Đã TẮT thông báo lỗi');
+    console.log(chalk.yellow('🔕'), `User ${userId} disabled error notifications`);
   }
 }
 
