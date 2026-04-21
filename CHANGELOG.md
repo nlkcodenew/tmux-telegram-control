@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-04-21
+
+### Added
+- Added `/error_notify` command to toggle error notifications on/off
+- Interactive ON/OFF buttons with visual indicators (✅/⚪)
+- Error notifications disabled by default to reduce spam
+- Watch mode respects error notification setting
+
+### Changed
+- Updated help text with new `/error_notify` command
+- Improved user control over notification preferences
+
 ## [1.0.4] - 2026-04-21
 
 ### Added
