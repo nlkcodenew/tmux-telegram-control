@@ -5,3 +5,6 @@ node_modules/
 .env
 test/
 examples/
+.ssh_deploy_key
+.ssh_deploy_key.pub
+CLAUDE.md
