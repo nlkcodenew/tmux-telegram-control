@@ -1,5 +1,8 @@
 # 🤖 tmux-telegram-control
 
+[![npm version](https://badge.fury.io/js/tmux-telegram-control.svg)](https://www.npmjs.com/package/tmux-telegram-control)
+[![GitHub](https://img.shields.io/github/license/nlkcodenew/tmux-telegram-control)](https://github.com/nlkcodenew/tmux-telegram-control)
+
 > Điều khiển tmux sessions từ xa qua Telegram - xem output, gửi lệnh, tạo session, tất cả từ điện thoại 📱
 
 ## 💡 Ý Tưởng

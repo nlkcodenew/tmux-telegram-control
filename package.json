@@ -23,7 +23,7 @@
     "monitoring",
     "automation"
   ],
-  "author": "nlkcodenew",
+  "author": "Pham Linh - https://github.com/nlkcodenew",
   "license": "MIT",
   "engines": {
     "node": ">=14.0.0"
@@ -36,7 +36,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nlkcodenew/tmux-telegram-control.git"
+    "url": "git+https://github.com/nlkcodenew/tmux-telegram-control.git"
   },
   "bugs": {
     "url": "https://github.com/nlkcodenew/tmux-telegram-control/issues"

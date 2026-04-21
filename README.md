@@ -1,5 +1,8 @@
 # 🤖 tmux-telegram-control
 
+[![npm version](https://badge.fury.io/js/tmux-telegram-control.svg)](https://www.npmjs.com/package/tmux-telegram-control)
+[![GitHub](https://img.shields.io/github/license/nlkcodenew/tmux-telegram-control)](https://github.com/nlkcodenew/tmux-telegram-control)
+
 > Control your tmux sessions remotely via Telegram - view output, send commands, create sessions, all from your phone 📱
 
 ## 💡 The Idea
