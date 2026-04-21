@@ -170,7 +170,7 @@ function stop() {
 
   if (!fs.existsSync(pidFile)) {
     console.log(chalk.yellow('⚠️  Bot is not running (no PID file found)'));
-    return;
+    return false;
   }
 
   const pid = fs.readFileSync(pidFile, 'utf8').trim();
@@ -180,10 +180,63 @@ function stop() {
     process.kill(pid, 'SIGTERM');
     fs.unlinkSync(pidFile);
     console.log(chalk.green('✅ Bot stopped (PID:', pid + ')'));
+    return true;
   } catch (e) {
     console.log(chalk.yellow('⚠️  Process not found (PID:', pid + ')'));
     fs.unlinkSync(pidFile);
+    return false;
   }
 }
 
-module.exports = { init, start, stop, installService };
+function update() {
+  const { spawnSync } = require('child_process');
+
+  console.log(chalk.blue.bold('\n🔄 Updating tmux-telegram-control...\n'));
+
+  // Check if bot is running
+  const pidFile = path.join(CONFIG_DIR, 'bot.pid');
+  const wasRunning = fs.existsSync(pidFile);
+
+  // Stop bot if running
+  if (wasRunning) {
+    console.log(chalk.yellow('⏹️  Stopping bot...'));
+    stop();
+    // Wait a bit for graceful shutdown
+    spawnSync('sleep', ['1']);
+  }
+
+  // Update package
+  console.log(chalk.yellow('📦 Updating package from npm...'));
+  const result = spawnSync('npm', ['install', '-g', 'tmux-telegram-control@latest'], {
+    stdio: 'inherit',
+    shell: false
+  });
+
+  if (result.status !== 0) {
+    console.log(chalk.red('\n❌ Update failed!'));
+    console.log(chalk.gray('Try manually: npm install -g tmux-telegram-control@latest'));
+    process.exit(1);
+  }
+
+  // Show new version
+  console.log(chalk.green('\n✅ Update complete!'));
+  const versionResult = spawnSync('npm', ['list', '-g', 'tmux-telegram-control', '--depth=0'], {
+    encoding: 'utf8',
+    shell: false
+  });
+  if (versionResult.stdout) {
+    console.log(chalk.gray(versionResult.stdout.trim()));
+  }
+
+  // Restart if was running
+  if (wasRunning) {
+    console.log(chalk.yellow('\n🚀 Restarting bot...'));
+    start({ daemon: true });
+  } else {
+    console.log(chalk.gray('\n💡 Bot was not running. Start it with:'), chalk.cyan('tmux-telegram start -d'));
+  }
+
+  console.log(chalk.green('\n✨ All done!\n'));
+}
+
+module.exports = { init, start, stop, installService, update };

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 const { program } = require('commander');
-const { init, start, stop, installService } = require('../src/cli');
+const { init, start, stop, installService, update } = require('../src/cli');
 
 program
   .name('tmux-telegram')
   .description('Control tmux sessions remotely via Telegram')
-  .version('1.0.2');
+  .version('1.0.3');
 
 program
   .command('init')
@@ -23,6 +23,11 @@ program
   .command('stop')
   .description('Stop the background bot')
   .action(stop);
+
+program
+  .command('update')
+  .description('Update to latest version (auto stop/restart)')
+  .action(update);
 
 program
   .command('install-service')

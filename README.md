@@ -204,6 +204,22 @@ Config file: `~/.tmux-telegram/config.json`
 | `/d` | Send Ctrl+D |
 | `/session` | Show current session |
 
+## 🔄 Updating
+
+To update to the latest version:
+
+```bash
+# Easy way - automatic stop/restart
+tmux-telegram update
+
+# Manual way
+tmux-telegram stop
+npm install -g tmux-telegram-control@latest
+tmux-telegram start -d
+```
+
+**Note:** Your configuration in `~/.tmux-telegram/config.json` is preserved during updates.
+
 ## 🛡️ Security
 
 - **User authentication**: Only your Telegram user ID can control the bot

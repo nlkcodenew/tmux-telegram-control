@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4] - 2026-04-21
+
+### Added
+- Added `tmux-telegram update` command for easy updates with automatic stop/restart
+- Update command preserves user configuration
+
+### Fixed
+- Fixed session creation on WSL - sessions now start with bash command to prevent immediate exit
+
+### Changed
+- Updated README and README_VI with update instructions
+- Improved CLI with update command
+
+## [1.0.3] - 2026-04-21
+
+### Fixed
+- Fixed session immediate exit issue on WSL environments
+
 ## [1.0.2] - 2026-04-21
 
 ### Added

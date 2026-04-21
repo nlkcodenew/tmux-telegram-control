@@ -158,6 +158,22 @@ Output cập nhật mỗi 2 giây. Dùng `/unwatch` để dừng.
 | `/d` | Gửi Ctrl+D |
 | `/session` | Hiển thị session hiện tại |
 
+## 🔄 Cập Nhật
+
+Để cập nhật lên phiên bản mới nhất:
+
+```bash
+# Cách dễ - tự động dừng/khởi động lại
+tmux-telegram update
+
+# Cách thủ công
+tmux-telegram stop
+npm install -g tmux-telegram-control@latest
+tmux-telegram start -d
+```
+
+**Lưu ý:** Cấu hình của bạn trong `~/.tmux-telegram/config.json` được giữ nguyên khi cập nhật.
+
 ## 🛡️ Bảo Mật
 
 - **Xác thực người dùng**: Chỉ Telegram user ID của bạn mới điều khiển được bot
