@@ -1,14 +1,19 @@
-const { execSync } = require('child_process');
+const { execSync, spawn, spawnSync } = require('child_process');
 
 function tmux(...args) {
-  try {
-    const result = execSync(`tmux ${args.join(' ')}`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return { success: true, output: result.trim() };
-  } catch (err) {
-    return { success: false, error: err.message, output: err.stdout || '' };
+  // Use spawnSync instead of execSync to avoid pipe coupling issues
+  const result = spawnSync('tmux', args, {
+    encoding: 'utf8'
+  });
+
+  if (result.status === 0) {
+    return { success: true, output: result.stdout.trim() };
+  } else {
+    return {
+      success: false,
+      error: result.stderr,
+      output: result.stdout || ''
+    };
   }
 }
 
@@ -40,10 +45,9 @@ function sendControlKey(sessionName, key) {
 }
 
 function createSession(sessionName) {
-  // WSL fix: bash needs stdin to stay alive, use 'bash -i' for interactive mode
-  // or run a command that keeps it alive
-  const result = tmux('new-session', '-d', '-s', sessionName, 'bash', '-c', 'exec bash');
-  return result.success;
+  // Let tmux spawn its default shell - simpler and more stable
+  const result = tmux('new-session', '-d', '-s', sessionName);
+  return result.success && sessionExists(sessionName);
 }
 
 function killSession(sessionName) {
