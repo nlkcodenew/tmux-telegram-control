@@ -620,10 +620,32 @@ async function sendCommand(chatId, userId, args) {
     return;
   }
 
-  if (sendKeys(sessionName, args, true)) {
-    await telegram.sendMessage(chatId, `✅ Sent: \`${args}\``);
+  // Smart auto-enter: short commands get immediate Enter, long commands get delayed Enter
+  const isShortCommand = args.length <= 50;
+
+  if (isShortCommand) {
+    // Short command: send with Enter immediately
+    if (sendKeys(sessionName, args, true)) {
+      await telegram.sendMessage(chatId, `✅ Sent: \`${args}\``);
+    } else {
+      await telegram.sendMessage(chatId, '❌ Failed to send');
+    }
   } else {
-    await telegram.sendMessage(chatId, '❌ Failed to send');
+    // Long command: send without Enter first
+    if (sendKeys(sessionName, args, false)) {
+      await telegram.sendMessage(chatId, `✅ Sent: \`${args.substring(0, 50)}...\`\n⏳ Sending Enter in 500ms...`);
+
+      // Wait 500ms then send Enter
+      await sleep(500);
+
+      if (sendKeys(sessionName, '', true)) {
+        await telegram.sendMessage(chatId, '✅ Enter sent');
+      } else {
+        await telegram.sendMessage(chatId, '⚠️ Failed to send Enter - use /e manually');
+      }
+    } else {
+      await telegram.sendMessage(chatId, '❌ Failed to send');
+    }
   }
 }
 
