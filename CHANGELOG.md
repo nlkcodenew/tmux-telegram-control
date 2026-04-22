@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-04-22
+
+### Added
+- **Persistent state management** - Sessions and watch mode now survive bot restarts
+  - State saved to `~/.tmux-telegram/state.json`
+  - Auto-resume watch sessions after restart
+  - Preserves current attached sessions
+- **Separator filtering** - Automatically removes horizontal line separators (─ and -) from output
+- Added `clear-state` CLI command to reset saved state
+
+### Changed
+- State is now persistent across restarts (breaking change for users expecting stateless behavior)
+- Output is cleaner with separator lines filtered out
+
+### Performance
+- Smart polling already implemented (only updates when output changes)
+- Minimal disk I/O impact (~1-2ms per state save)
+
 ## [1.1.1] - 2026-04-21
 
 ### Added
