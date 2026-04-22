@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { program } = require('commander');
-const { init, start, stop, installService, update } = require('../src/cli');
+const { init, start, stop, installService, update, clearState } = require('../src/cli');
 
 program
   .name('tmux-telegram')

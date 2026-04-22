@@ -239,4 +239,15 @@ function update() {
   console.log(chalk.green('\n✨ All done!\n'));
 }
 
-module.exports = { init, start, stop, installService, update };
+function clearState() {
+  const StateManager = require('./state-manager');
+  const stateManager = new StateManager();
+
+  console.log(chalk.yellow('🗑️  Clearing saved state...'));
+  stateManager.clear();
+  console.log(chalk.green('✅ State cleared'));
+  console.log(chalk.gray('   Sessions and watch mode state have been reset'));
+  console.log(chalk.gray('   Restart the bot to start fresh\n'));
+}
+
+module.exports = { init, start, stop, installService, update, clearState };
