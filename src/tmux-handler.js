@@ -29,7 +29,18 @@ function sessionExists(name) {
 
 function getOutput(sessionName, lines = 60) {
   const result = tmux('capture-pane', '-p', '-t', sessionName, '-S', `-${lines}`);
-  return result.success ? result.output : '❌ Cannot read output';
+  if (!result.success) return '❌ Cannot read output';
+  return filterSeparators(result.output);
+}
+
+function filterSeparators(output) {
+  // Remove lines that are only horizontal separators (─ or -)
+  const lines = output.split('\n');
+  const filtered = lines.filter(line => {
+    const stripped = line.trim().replace(/─/g, '').replace(/-/g, '');
+    return stripped !== '';
+  });
+  return filtered.length > 0 ? filtered.join('\n') : output;
 }
 
 function sendKeys(sessionName, text, pressEnter = true) {
@@ -141,6 +152,7 @@ module.exports = {
   listSessions,
   sessionExists,
   getOutput,
+  filterSeparators,
   sendKeys,
   sendControlKey,
   createSession,
