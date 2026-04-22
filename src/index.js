@@ -1,6 +1,7 @@
 const chalk = require('chalk');
 const { loadConfig, checkDependencies } = require('./config');
 const TelegramAPI = require('./telegram-api');
+const StateManager = require('./state-manager');
 const {
   listSessions,
   sessionExists,
@@ -23,6 +24,7 @@ let enableErrorNotifications = false; // Default: OFF
 
 let config;
 let telegram;
+let stateManager;
 
 /**
  * Initialize bot
@@ -37,6 +39,13 @@ async function init() {
   config = loadConfig();
   telegram = new TelegramAPI(config.telegram.botToken);
 
+  // Initialize state manager
+  stateManager = new StateManager();
+  const { currentSessions: loadedSessions, watchingToResume } = stateManager.load();
+
+  // Restore current sessions
+  Object.assign(currentSessions, loadedSessions);
+
   console.log(chalk.green('✅ Configuration loaded'));
   console.log(chalk.gray('   Bot token:'), config.telegram.botToken.substring(0, 20) + '...');
   console.log(chalk.gray('   Allowed user:'), config.telegram.allowedUserId);
@@ -45,10 +54,51 @@ async function init() {
   // Set bot commands
   await setBotCommands();
 
+  // Resume watch sessions
+  await resumeWatchSessions(watchingToResume);
+
   console.log(chalk.green('🎯 Bot is listening for messages...\n'));
 
   // Start polling
   startPolling();
+}
+
+/**
+ * Resume watch sessions from saved state
+ */
+async function resumeWatchSessions(watchingToResume) {
+  for (const [userId, info] of Object.entries(watchingToResume)) {
+    const uid = parseInt(userId);
+
+    if (!sessionExists(info.session)) {
+      console.log(chalk.yellow('⚠️'), `Cannot resume watch for ${info.session} - session not found`);
+      continue;
+    }
+
+    // Send initial watch message
+    const output = getOutput(info.session, config.tmux.outputLines);
+    const truncated = output.length > 3800 ? '...\n' + output.slice(-3800) : output;
+
+    const result = await telegram.sendMessage(
+      info.chatId,
+      `📺 *Watching: ${info.session}* (resumed)\n\`\`\`\n${truncated}\n\`\`\``
+    );
+
+    if (result.ok) {
+      watchingSessions[uid] = {
+        session: info.session,
+        messageId: result.result.message_id,
+        chatId: info.chatId,
+        stop: false
+      };
+
+      console.log(chalk.green('✅'), `Resumed watch: ${info.session} for user ${uid}`);
+      startWatchLoop(uid);
+
+      // Save updated state with new message_id
+      stateManager.save(currentSessions, watchingSessions);
+    }
+  }
 }
 
 /**
@@ -138,6 +188,7 @@ async function handleMessage(message) {
     // Create session
     if (createSession(sessionName)) {
       currentSessions[userId] = sessionName;
+      stateManager.save(currentSessions, watchingSessions);
       await telegram.sendMessage(chatId, `✅ *Session \`${sessionName}\` đã được tạo!*\n\nBạn đã được attach vào session này.\n\nDùng /s để gửi lệnh.`);
       console.log(chalk.green('✅'), `User ${userId} created session:`, sessionName);
     } else {
@@ -331,6 +382,7 @@ async function newSessionCommand(chatId, userId, args) {
 
   if (createSession(sessionName)) {
     currentSessions[userId] = sessionName;
+    stateManager.save(currentSessions, watchingSessions);
     await telegram.sendMessage(chatId, `✅ *Session \`${sessionName}\` đã được tạo!*\n\nBạn đã được attach vào session này.\n\nDùng /s để gửi lệnh.`);
     console.log(chalk.green('✅'), `User ${userId} created session:`, sessionName);
   } else {
@@ -355,6 +407,7 @@ async function attachCommand(chatId, userId, args) {
   }
 
   currentSessions[userId] = sessionName;
+  stateManager.save(currentSessions, watchingSessions);
 
   const output = getOutput(sessionName, config.tmux.outputLines);
   const truncated = output.length > 3800 ? '...\n' + output.slice(-3800) : output;
@@ -391,6 +444,7 @@ async function killSessionCommand(chatId, userId, args) {
     // Kill the session
     const { killSession } = require('./tmux-handler');
     if (killSession(sessionName)) {
+      stateManager.save(currentSessions, watchingSessions);
       await telegram.sendMessage(chatId, `✅ *Session \`${sessionName}\` đã bị xóa!*`);
       console.log(chalk.yellow('🗑️'), `User ${userId} killed session:`, sessionName);
     } else {
@@ -477,6 +531,7 @@ async function watchCommand(chatId, userId) {
     };
 
     console.log(chalk.blue('👁️'), `User ${userId} started watching:`, sessionName);
+    stateManager.save(currentSessions, watchingSessions);
     startWatchLoop(userId);
   }
 }
@@ -493,6 +548,7 @@ async function unwatchCommand(chatId, userId) {
   watchingSessions[userId].stop = true;
   delete watchingSessions[userId];
 
+  stateManager.save(currentSessions, watchingSessions);
   await telegram.sendMessage(chatId, '✅ Watch mode stopped');
   console.log(chalk.blue('👁️'), `User ${userId} stopped watching`);
 }
@@ -691,6 +747,7 @@ async function handleCallback(callbackQuery) {
     }
 
     currentSessions[userId] = sessionName;
+    stateManager.save(currentSessions, watchingSessions);
 
     const output = getOutput(sessionName, config.tmux.outputLines);
     const truncated = output.length > 3800 ? '...\n' + output.slice(-3800) : output;
@@ -715,6 +772,7 @@ async function handleCallback(callbackQuery) {
     // Kill the session
     const { killSession } = require('./tmux-handler');
     if (killSession(sessionName)) {
+      stateManager.save(currentSessions, watchingSessions);
       await telegram.sendMessage(chatId, `✅ *Session \`${sessionName}\` đã bị xóa!*`);
       await telegram.answerCallbackQuery(callbackId, `✅ Đã xóa ${sessionName}`);
       console.log(chalk.yellow('🗑️'), `User ${userId} killed session:`, sessionName);
