@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-04-22
+
+### Added
+- **Smart auto-enter for /s command**
+  - Short commands (≤50 chars): immediate Enter
+  - Long commands (>50 chars): send text, wait 500ms, then auto-send Enter
+  - Progress feedback for long commands
+
 ## [2.0.0] - 2026-04-22
 
 ### Added
