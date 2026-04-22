@@ -2,6 +2,12 @@
 
 Control tmux sessions remotely via Telegram bot.
 
+## Codebase Structure
+
+- **Node.js npm package** (`/home/mrlinh/tmux-telegram-control/`) - Published to npm, production-ready
+- **Python script** (`/home/mrlinh/.openclaw/workspace/Docker-Tradingbot/scripts/`) - Local testing with systemd service
+- Features should be implemented in both codebases
+
 ## Project Structure
 
 - `src/` - Source code
@@ -29,6 +35,16 @@ npm link
 # Test commands
 tmux-telegram init
 tmux-telegram start
+```
+
+### Python Script (Local Testing)
+```bash
+# Location: /home/mrlinh/.openclaw/workspace/Docker-Tradingbot/scripts/telegram_unified_gateway.py
+# Restart service after changes
+sudo systemctl restart telegram-unified-gateway.service
+
+# Check status
+sudo systemctl status telegram-unified-gateway.service --no-pager -l
 ```
 
 ## Publishing Workflow
