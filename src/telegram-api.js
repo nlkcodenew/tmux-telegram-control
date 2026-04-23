@@ -133,6 +133,26 @@ class TelegramAPI {
       return { ok: false };
     }
   }
+
+  /**
+   * Set chat menu button
+   */
+  async setChatMenuButton(chatId, menuButton) {
+    try {
+      const payload = {
+        chat_id: chatId,
+        menu_button: menuButton
+      };
+
+      const response = await axios.post(`${this.baseURL}/setChatMenuButton`, payload, {
+        timeout: 10000
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Failed to set menu button:', err.message);
+      return { ok: false };
+    }
+  }
 }
 
 module.exports = TelegramAPI;

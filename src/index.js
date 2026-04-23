@@ -106,6 +106,7 @@ async function resumeWatchSessions(watchingToResume) {
  */
 async function setBotCommands() {
   const commands = [
+    { command: 'menu', description: 'Quick actions menu' },
     { command: 'ls', description: 'List tmux sessions' },
     { command: 'new', description: 'Create new session' },
     { command: 'attach', description: 'Attach to session' },
@@ -168,6 +169,9 @@ async function handleMessage(message) {
     return;
   }
 
+  // Update menu button based on current session
+  await updateMenuButton(chatId, userId);
+
   // Check if user is in "new session" mode
   if (pendingNewSession[userId]) {
     const sessionName = text.trim();
@@ -191,6 +195,9 @@ async function handleMessage(message) {
       stateManager.save(currentSessions, watchingSessions);
       await telegram.sendMessage(chatId, `✅ *Session \`${sessionName}\` đã được tạo!*\n\nBạn đã được attach vào session này.\n\nDùng /s để gửi lệnh.`);
       console.log(chalk.green('✅'), `User ${userId} created session:`, sessionName);
+
+      // Update menu for attached session
+      await updateMenuButton(chatId, userId);
     } else {
       await telegram.sendMessage(chatId, `❌ Không thể tạo session`);
     }
@@ -237,6 +244,10 @@ async function handleCommand(command, args, chatId, userId) {
     case 'kill':
     case 'delete':
       await killSessionCommand(chatId, userId, args);
+      break;
+
+    case 'menu':
+      await showQuickMenu(chatId, userId);
       break;
 
     case 'o':
@@ -289,11 +300,16 @@ async function handleCommand(command, args, chatId, userId) {
 async function sendHelp(chatId) {
   const helpText = `🤖 *Tmux Control Bot*
 
-*Quick Commands:*
+*Quick Access:*
+/menu — Quick actions menu (⚡ recommended)
+
+*Session Management:*
 /ls — List sessions (hoặc tạo mới)
 /new \`<name>\` — Tạo session mới
 /attach \`<name>\` — Select session
 /kill \`<name>\` — Delete session
+
+*View Output:*
 /o — View screen (one-time)
 /watch — Realtime mode (auto-update)
 /unwatch — Stop realtime
@@ -413,6 +429,9 @@ async function attachCommand(chatId, userId, args) {
   const truncated = output.length > 3800 ? '...\n' + output.slice(-3800) : output;
 
   await telegram.sendMessage(chatId, `✅ *Attached: ${sessionName}*\n\n\`\`\`\n${truncated}\n\`\`\``);
+
+  // Update menu button
+  await updateMenuButton(chatId, userId);
 }
 
 /**
@@ -777,6 +796,9 @@ async function handleCallback(callbackQuery) {
     await telegram.sendMessage(chatId, `✅ *Attached: ${sessionName}*\n\n\`\`\`\n${truncated}\n\`\`\``);
     await telegram.answerCallbackQuery(callbackId, `✅ Attached to ${sessionName}`);
 
+    // Update menu button
+    await updateMenuButton(chatId, userId);
+
     console.log(chalk.green('✅'), `User ${userId} attached to:`, sessionName);
   } else if (callbackData.startsWith('kill_')) {
     const sessionName = callbackData.replace('kill_', '');
@@ -789,6 +811,8 @@ async function handleCallback(callbackQuery) {
     // Check if user is currently attached to this session
     if (currentSessions[userId] === sessionName) {
       delete currentSessions[userId];
+      // Update menu button to general menu
+      await updateMenuButton(chatId, userId);
     }
 
     // Kill the session
@@ -833,7 +857,85 @@ async function handleCallback(callbackQuery) {
     await telegram.editMessageText(chatId, message.message_id, msg, { reply_markup: keyboard });
     await telegram.answerCallbackQuery(callbackId, '🔕 Đã TẮT thông báo lỗi');
     console.log(chalk.yellow('🔕'), `User ${userId} disabled error notifications`);
+  } else if (callbackData === 'quick_output') {
+    await telegram.answerCallbackQuery(callbackId, '📺 Loading output...');
+    await outputCommand(chatId, userId);
+  } else if (callbackData === 'quick_watch') {
+    await telegram.answerCallbackQuery(callbackId, '👁️ Starting watch mode...');
+    await watchCommand(chatId, userId);
+  } else if (callbackData === 'quick_enter') {
+    await telegram.answerCallbackQuery(callbackId, '⏎ Sending Enter...');
+    await enterCommand(chatId, userId);
+  } else if (callbackData === 'quick_ctrlc') {
+    await telegram.answerCallbackQuery(callbackId, '⛔ Sending Ctrl+C...');
+    await ctrlCCommand(chatId, userId);
+  } else if (callbackData === 'quick_switch') {
+    await telegram.answerCallbackQuery(callbackId, '🔄 Switching session...');
+    await listSessionsCommand(chatId, userId);
+  } else if (callbackData === 'quick_delete') {
+    await telegram.answerCallbackQuery(callbackId, '🗑️ Delete session...');
+    await killSessionCommand(chatId, userId, '');
   }
+}
+
+/**
+ * Update menu button based on context
+ */
+async function updateMenuButton(chatId, userId) {
+  const sessionName = currentSessions[userId];
+
+  if (!sessionName) {
+    // No session attached - show general menu
+    const menuButton = {
+      type: 'commands',
+      text: 'Menu'
+    };
+    await telegram.setChatMenuButton(chatId, menuButton);
+  } else {
+    // Session attached - show session-specific menu with inline keyboard
+    const menuButton = {
+      type: 'commands',
+      text: `📺 ${sessionName}`
+    };
+    await telegram.setChatMenuButton(chatId, menuButton);
+  }
+}
+
+/**
+ * Show quick action menu
+ */
+async function showQuickMenu(chatId, userId) {
+  const sessionName = currentSessions[userId];
+
+  if (!sessionName) {
+    // No session - show session selection
+    await listSessionsCommand(chatId, userId);
+    return;
+  }
+
+  // Session attached - show quick actions
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '📺 Output', callback_data: 'quick_output' },
+        { text: '👁️ Watch', callback_data: 'quick_watch' }
+      ],
+      [
+        { text: '⏎ Enter', callback_data: 'quick_enter' },
+        { text: '⛔ Ctrl+C', callback_data: 'quick_ctrlc' }
+      ],
+      [
+        { text: '🔄 Switch', callback_data: 'quick_switch' },
+        { text: '🗑️ Delete', callback_data: 'quick_delete' }
+      ]
+    ]
+  };
+
+  await telegram.sendMessage(
+    chatId,
+    `⚡ *Quick Actions: ${sessionName}*\n\nChọn hành động:`,
+    { reply_markup: keyboard }
+  );
 }
 
 /**

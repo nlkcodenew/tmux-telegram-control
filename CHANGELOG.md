@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-04-23
+
+### Added
+- **Quick Actions Menu** - New `/menu` command for easy access to common actions
+  - Context-aware menu buttons based on session state
+  - No session: Shows session selection
+  - Session attached: Shows quick actions (Output, Watch, Enter, Ctrl+C, Switch, Delete)
+  - Reduces need to type `/` commands
+- **Dynamic menu button** - Menu button text changes based on current session
+  - Shows "Menu" when no session attached
+  - Shows "📺 {session_name}" when attached to a session
+- **Enhanced inline keyboards** - All actions accessible via button clicks
+  - Quick Output - View screen output
+  - Quick Watch - Start realtime monitoring
+  - Quick Enter - Send Enter key
+  - Quick Ctrl+C - Stop running process
+  - Quick Switch - Change to another session
+  - Quick Delete - Remove a session
+
+### Changed
+- Updated help text to highlight `/menu` as recommended quick access method
+- Improved user experience with fewer typed commands needed
+
 ## [2.1.0] - 2026-04-22
 
 ### Added
